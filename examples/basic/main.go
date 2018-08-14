@@ -1,16 +1,3 @@
-# iCalendar
-iCalendar is a library to assist in producing iCalendar events (.ics).
-
-## Features
-Using an ```icalendar.Event``` one can create iCalendar events, which can be sent to any email service provider who supports ics format calendar events. The majority of providers should support ics format events. We currently test for:
-
-- GMail
-- Outlook
-- Apple Mail *(intended to support, no testing has been performed yet)*
-
-## Usage
-
-```go
 package main
 
 import (
@@ -41,5 +28,3 @@ func main() {
 
 	f.Write([]byte(e.String()))
 }
-
-```
