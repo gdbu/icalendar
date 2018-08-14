@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/Hatch1fy/errors"
 	"github.com/Hatch1fy/uuid"
 )
 
@@ -49,14 +50,15 @@ END:VCALENDAR
 // Event represents a Calendar event
 type Event struct {
 	// This property defines the persistent, globally unique identifier for the calendar component.
-	UID       string
-	Organizer string
+	UID string `json:"uid"`
+	// This property defines the organizer for the calendar component.
+	Organizer string `json:"organizer"`
 	// This property defines a short summary or subject for the calendar component.
-	Summary string
+	Summary string `json:"summary"`
 	// This property provides a more complete description of the calendar component, than that provided by the "SUMMARY" property.
-	Description string
+	Description string `json:"description"`
 	// This property defines a Uniform Resource Locator (URL) associated with the iCalendar object.
-	URL *url.URL
+	URL string `json:"url"`
 	// This property defines the revision sequence number of the calendar component within a sequence of revisions.
 	Sequence int64
 	// This property defines the overall status or confirmation for the calendar component.
@@ -79,46 +81,49 @@ type Event struct {
 	Geo *Coordinate
 }
 
-func (e *Event) appendUID(bs []byte) []byte {
-	if e.UID == "" {
-		u := uuid.New()
-		e.UID = u.String()
+func (e *Event) validateURL() (err error) {
+	if len(e.URL) == 0 {
+		return
 	}
 
-	return appendString(bs, "UID:", e.UID, "\r\n")
+	_, err = url.Parse(e.URL)
+	return
 }
 
-func (e *Event) appendDescription(bs []byte) []byte {
-	if e.Description == "" {
-		return bs
-	}
-
-	bs = appendString(bs, "DESCRIPTION:", e.Description, "\r\n")
-	return appendString(bs, "X-ALT-DESC;FMTTYPE=text/html:", e.Description, "\r\n")
-}
-
-func (e *Event) appendCreated(bs []byte) []byte {
+// Sanitize will ensure the required fields have default data (if empty)
+func (e *Event) Sanitize() {
 	if e.Created.IsZero() {
 		e.Created = time.Now()
 	}
 
-	return appendTime(bs, "DTSTAMP:", e.Created, "\r\n")
+	if e.UID == "" {
+		u := uuid.New()
+		e.UID = u.String()
+	}
+}
+
+// Validate will validate an event
+func (e *Event) Validate() (err error) {
+	var errs errors.ErrorList
+	errs.Push(e.validateURL())
+	return errs.Err()
 }
 
 func (e *Event) String() (out string) {
 	var buf []byte
 	buf = append(buf, getHeader("Hatchify", "Hatch app")...)
-	buf = e.appendUID(buf)
+	buf = appendString(buf, "UID:", e.UID, "\r\n")
 	buf = appendString(buf, "ORGANIZER:MAILTO:", e.Organizer, "\r\n")
 	buf = appendString(buf, "SUMMARY:", e.Summary, "\r\n")
-	buf = e.appendDescription(buf)
-	buf = appendStringer(buf, "URL:", e.URL, "\r\n")
+	buf = appendString(buf, "DESCRIPTION:", e.Description, "\r\n")
+	buf = appendString(buf, "X-ALT-DESC;FMTTYPE=text/html:", e.Description, "\r\n")
+	buf = appendString(buf, "URL:", e.URL, "\r\n")
 	buf = appendInt64(buf, "SEQUENCE:", e.Sequence, "\r\n")
 	buf = appendString(buf, "STATUS:", e.Status, "\r\n")
 	buf = appendString(buf, "TRANSPARENT:", e.Transparent, "\r\n")
 	buf = appendTime(buf, "DTSTART:", e.Start, "\r\n")
 	buf = appendTime(buf, "DTEND:", e.End, "\r\n")
-	buf = e.appendCreated(buf)
+	buf = appendTime(buf, "DTSTAMP:", e.Created, "\r\n")
 	buf = appendStringer(buf, "RRULE:", e.RepeatRule, "\r\n")
 	buf = appendStringSlice(buf, "CATEGORIES:", e.Categories, "\r\n")
 	buf = appendString(buf, "LOCATION:", e.Location, "\r\n")
