@@ -15,6 +15,6 @@ func (c *Coordinate) String() (out string) {
 	lat := strconv.FormatFloat(c.Lat, 'f', 8, 64)
 	// Convert longitude to string
 	lon := strconv.FormatFloat(c.Lon, 'f', 8, 64)
-	// Concatinate lat/lon with semi-colon as the delimiter
+	// Concatenate lat/lon with semi-colon as the delimiter
 	return lat + ";" + lon
 }

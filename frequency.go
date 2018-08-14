@@ -17,5 +17,5 @@ const (
 	FrequencyYearly = "YEARLY"
 )
 
-// Frequency represents a event frequency
+// Frequency represents an event frequency
 type Frequency string
