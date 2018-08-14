@@ -2,11 +2,16 @@ package icalendar
 
 import (
 	"bytes"
+	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
 )
+
+func getHeader(company, product string) (out []byte) {
+	return []byte(fmt.Sprintf(header, company, product))
+}
 
 func appendString(bs []byte, prefix, val, suffix string) []byte {
 	if len(val) == 0 {

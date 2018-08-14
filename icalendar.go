@@ -1,7 +1,6 @@
 package icalendar
 
 import (
-	"fmt"
 	"net/url"
 	"time"
 
@@ -15,10 +14,6 @@ const (
 
 	dateFmt = "20060102T150405Z"
 )
-
-func getHeader(company, product string) (out []byte) {
-	return []byte(fmt.Sprintf(header, company, product))
-}
 
 // Event represents a Calendar event
 type Event struct {
@@ -54,11 +49,14 @@ type Event struct {
 	Geo *Coordinate
 }
 
+// validateURL will ensure the event has a valid URL (if set)
 func (e *Event) validateURL() (err error) {
 	if len(e.URL) == 0 {
+		// URL is not set, return early
 		return
 	}
 
+	// Attempt to parse the url as a url.URL
 	_, err = url.Parse(e.URL)
 	return
 }
@@ -66,11 +64,14 @@ func (e *Event) validateURL() (err error) {
 // Sanitize will ensure the required fields have default data (if empty)
 func (e *Event) Sanitize() {
 	if e.Created.IsZero() {
+		// Created is not set, set it as the current time
 		e.Created = time.Now()
 	}
 
 	if e.UID == "" {
+		// UID is not set, create a new uuid.UUID
 		u := uuid.New()
+		// Set UID as the string representation of uuid
 		e.UID = u.String()
 	}
 }
@@ -78,29 +79,53 @@ func (e *Event) Sanitize() {
 // Validate will validate an event
 func (e *Event) Validate() (err error) {
 	var errs errors.ErrorList
+	// Ensure URL is valid (if set)
 	errs.Push(e.validateURL())
+	// Return the list of collected errors
+	// TODO: Dive deeper into validations if necessary, some notables:
+	//			- Repeat rules
+	//			- Start/end time being inverse
 	return errs.Err()
 }
 
 func (e *Event) String() (out string) {
 	var buf []byte
+	// Set header
 	buf = append(buf, getHeader("Hatchify", "Hatch app")...)
+	// Set UID (will default if unset)
 	buf = appendString(buf, "UID:", e.UID, "\r\n")
+	// Set organizer
 	buf = appendString(buf, "ORGANIZER:MAILTO:", e.Organizer, "\r\n")
+	// Set summary
 	buf = appendString(buf, "SUMMARY:", e.Summary, "\r\n")
+	// Set description
 	buf = appendString(buf, "DESCRIPTION:", e.Description, "\r\n")
+	// Set description (for Microsoft).. my heart gently weeps
 	buf = appendString(buf, "X-ALT-DESC;FMTTYPE=text/html:", e.Description, "\r\n")
+	// Set url
 	buf = appendString(buf, "URL:", e.URL, "\r\n")
+	// Set sequence
 	buf = appendInt64(buf, "SEQUENCE:", e.Sequence, "\r\n")
+	// Set status
 	buf = appendString(buf, "STATUS:", e.Status, "\r\n")
+	// Set transparent
 	buf = appendString(buf, "TRANSPARENT:", e.Transparent, "\r\n")
+	// Set start timestamp
 	buf = appendTime(buf, "DTSTART:", e.Start, "\r\n")
+	// Set end timestamp
 	buf = appendTime(buf, "DTEND:", e.End, "\r\n")
+	// Set creation timestamp (will default if unset)
 	buf = appendTime(buf, "DTSTAMP:", e.Created, "\r\n")
+	// Set repeating rule (see RepeatingRule type)
 	buf = appendStringer(buf, "RRULE:", e.RepeatRule, "\r\n")
+	// Set categories
 	buf = appendStringSlice(buf, "CATEGORIES:", e.Categories, "\r\n")
+	// Set location
 	buf = appendString(buf, "LOCATION:", e.Location, "\r\n")
+	// Set geo coordinates (see Coordinate type)
 	buf = appendStringer(buf, "GEO:", e.Geo, "\r\n")
+	// Set footer
 	buf = append(buf, footer...)
+	// Convert the byteslice buffer to a string and return
 	return string(buf)
 }

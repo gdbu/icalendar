@@ -4,10 +4,17 @@ import "strconv"
 
 // Coordinate represents a geo coordinate
 type Coordinate struct {
+	// Latitude
 	Lat float64 `json:"lat"`
+	// Longitude
 	Lon float64 `json:"lon"`
 }
 
 func (c *Coordinate) String() (out string) {
-	return strconv.FormatFloat(c.Lat, 'f', 8, 64) + ";" + strconv.FormatFloat(c.Lon, 'f', 8, 64)
+	// Convert latitude to string
+	lat := strconv.FormatFloat(c.Lat, 'f', 8, 64)
+	// Convert longitude to string
+	lon := strconv.FormatFloat(c.Lon, 'f', 8, 64)
+	// Concatinate lat/lon with semi-colon as the delimiter
+	return lat + ";" + lon
 }
